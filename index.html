@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>考研学习规划 Agent · 分科目 · AI 对话 · 计时 · 统计热力图</title>
+<title>考研学习规划 Agent · LLM + RAG · 分科目 · AI 对话 · 计时 · 统计热力图</title>
 <style>
 :root{
   --ink:#1e293b; --muted:#64748b; --line:#e2e8f0;
@@ -59,6 +59,8 @@ body{
 .btn.small{padding:4px 10px; font-size:12px; border-radius:8px;}
 .btn.danger{background:linear-gradient(90deg,#e11d48,#dc2626);}
 .btn.ok{background:linear-gradient(90deg,#059669,#0d9488);}
+.badge-inline{display:inline-block; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:999px; background:#eef2ff; color:var(--brand); white-space:nowrap;}
+.badge-inline.on{background:#ecfdf5; color:var(--ok);}
 
 /* ---------- 布局 ---------- */
 .main-grid{display:grid; grid-template-columns:minmax(0,1fr) 370px; gap:16px; margin-top:16px; align-items:start;}
@@ -149,7 +151,7 @@ body{
 .feas-detail b{color:var(--ink);}
 
 /* ---------- 任务列表 ---------- */
-.task-toolbar{display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;}
+.task-toolbar{display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; align-items:center;}
 .task-row{
   display:flex; align-items:center; gap:9px; border:1px solid var(--line); border-radius:11px;
   padding:9px 12px; margin-bottom:8px; background:#fff; transition:.15s;
@@ -241,6 +243,16 @@ td.rev{color:var(--warn); font-weight:600;}
 .ai-sum{border-left:3px solid var(--brand); background:#eef2ff; border-radius:8px; padding:10px 12px; margin-top:8px; font-size:12.5px; line-height:1.8;}
 .ai-sum b{color:var(--brand);}
 
+/* ---------- 知识库 ---------- */
+.kb-upload{border:2px dashed #c7d2fe; border-radius:12px; padding:18px; text-align:center; color:var(--muted); font-size:13px; cursor:pointer; background:#f5f7ff; margin-bottom:12px; transition:.15s;}
+.kb-upload:hover{border-color:var(--brand); color:var(--brand);}
+.kb-paste{margin-bottom:12px;}
+.kb-paste textarea{width:100%; border:1px solid var(--line); border-radius:10px; padding:10px; font-size:12.5px; min-height:90px; outline:none; resize:vertical; color:var(--ink); font-family:inherit;}
+.kb-paste textarea:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(79,70,229,.08);}
+.doc-row{display:flex; align-items:center; gap:10px; border:1px solid var(--line); border-radius:11px; padding:9px 12px; margin-bottom:8px; background:#fff; font-size:12.5px;}
+.doc-row .nm{font-weight:700; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.doc-row .mt{color:var(--muted); font-size:11px; white-space:nowrap;}
+
 /* ---------- Agent 工作台 ---------- */
 .agent{position:sticky; top:76px;}
 .agent-head{display:flex; align-items:center; gap:8px; margin-bottom:10px;}
@@ -248,7 +260,7 @@ td.rev{color:var(--warn); font-weight:600;}
 .agent-status{margin-left:auto; font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px; background:#eef2ff; color:var(--brand);}
 .agent-status.run{background:#fef3c7; color:#92400e;}
 .agent-status.ok{background:#ecfdf5; color:var(--ok);}
-.agent-log{max-height:300px; overflow-y:auto; padding-right:4px; margin-bottom:10px;}
+.agent-log{max-height:280px; overflow-y:auto; padding-right:4px; margin-bottom:10px;}
 .agent-step{
   display:flex; gap:9px; padding:9px 10px; border-radius:10px; margin-bottom:8px;
   background:#f8fafc; border:1px solid var(--line); animation:stepIn .3s ease; font-size:12.5px;
@@ -260,6 +272,16 @@ td.rev{color:var(--warn); font-weight:600;}
 .agent-hint{margin-top:8px; font-size:11px; color:var(--muted); line-height:1.7; border-top:1px dashed var(--line); padding-top:8px;}
 @keyframes stepIn{from{opacity:0; transform:translateX(8px);} to{opacity:1; transform:none;}}
 
+/* ---------- LLM 设置 ---------- */
+.llm-box{border:1px solid #c7d2fe; background:#f5f7ff; border-radius:12px; padding:12px; margin-bottom:12px; display:grid; gap:8px;}
+.llm-box input,.llm-box select{border:1px solid var(--line); border-radius:8px; padding:6px 8px; font-size:12.5px; outline:none; width:100%; color:var(--ink); background:#fff;}
+.llm-box label{font-size:11px; color:var(--muted);}
+.llm-row{display:grid; gap:5px;}
+.llm-actions{display:flex; gap:8px; flex-wrap:wrap;}
+.llm-status{font-size:11px; color:var(--muted); line-height:1.6;}
+.llm-status.ok{color:var(--ok);}
+.llm-status.err{color:var(--bad);}
+
 /* ---------- 对话 ---------- */
 .chat{border-top:1px solid var(--line); padding-top:10px; margin-top:4px;}
 .chat-title{font-size:12.5px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:6px;}
@@ -267,11 +289,15 @@ td.rev{color:var(--warn); font-weight:600;}
 .msg{max-width:92%; padding:8px 11px; border-radius:12px; font-size:12.5px; line-height:1.65; white-space:pre-wrap;}
 .msg.user{justify-self:end; background:linear-gradient(90deg,var(--brand),var(--brand2)); color:#fff; border-bottom-right-radius:3px;}
 .msg.ai{justify-self:start; background:#f1f5f9; border:1px solid var(--line); border-bottom-left-radius:3px; color:var(--ink);}
+.msg-src{margin-top:6px; font-size:11px; color:var(--muted); line-height:1.7;}
+.msg-src b{color:var(--brand);}
 .chat-input{display:flex; gap:7px;}
 .chat-input input{
   flex:1; border:1px solid var(--line); border-radius:10px; padding:8px 11px; font-size:12.5px; outline:none; color:var(--ink);
 }
 .chat-input input:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+.loading-dots::after{content:'•••'; animation:blink 1.2s steps(3) infinite;}
+@keyframes blink{0%{opacity:.2}50%{opacity:1}100%{opacity:.2}}
 
 /* ---------- 计时浮窗 ---------- */
 .timer-fab{
@@ -325,7 +351,7 @@ footer{text-align:center; font-size:11px; color:var(--muted); padding:22px 0 8px
 @media (max-width:1100px){
   .main-grid{grid-template-columns:1fr;}
   .agent{position:static;}
-  .agent-log{max-height:300px;}
+  .agent-log{max-height:280px;}
 }
 @media (max-width:640px){
   .header-inner{padding:10px 14px;}
@@ -341,7 +367,7 @@ footer{text-align:center; font-size:11px; color:var(--muted); padding:22px 0 8px
     <div class="logo">🎓</div>
     <div class="title-block">
       <h1>考研学习规划 Agent</h1>
-      <p>自选科目 · AI 对话 · 任务管理 · 计时器 · 统计热力图 · 闯关打分</p>
+      <p>真实 LLM + RAG · 自选科目 · 任务管理 · 计时器 · 统计热力图 · 闯关打分</p>
     </div>
     <div class="header-controls">
       <label class="ctl">考试日期 <input type="date" id="examDate"></label>
@@ -363,6 +389,7 @@ footer{text-align:center; font-size:11px; color:var(--muted); padding:22px 0 8px
         <button class="tab" data-tab="today">📅 任务管理</button>
         <button class="tab" data-tab="review">🔁 复习日历</button>
         <button class="tab" data-tab="quiz">🎯 闯关自测</button>
+        <button class="tab" data-tab="kb">📚 知识库</button>
         <button class="tab" data-tab="stats">📊 统计与总结</button>
       </div>
 
@@ -437,6 +464,24 @@ footer{text-align:center; font-size:11px; color:var(--muted); padding:22px 0 8px
         </div>
       </div>
 
+      <!-- 知识库 -->
+      <div class="tab-panel" id="panel-kb">
+        <div class="card">
+          <div class="section-title">📚 知识库（RAG） <span class="hint">上传考研大纲 / 专业课目录，AI 回答时自动检索</span></div>
+          <div class="kb-upload" onclick="document.getElementById('kbFile').click()">📄 点击选择文件上传（支持 .txt .md .json .csv，可多选）</div>
+          <input type="file" id="kbFile" multiple accept=".txt,.md,.json,.csv" style="display:none;">
+          <div class="kb-paste">
+            <textarea id="kbPaste" placeholder="或直接粘贴大纲 / 专业课目录文本…"></textarea>
+          </div>
+          <div class="task-toolbar">
+            <button class="btn small" onclick="addKbPaste()">＋ 添加粘贴文本</button>
+            <button class="btn small ghost" onclick="clearKb()">清空知识库</button>
+          </div>
+          <div id="kbStats" class="note" style="display:none;"></div>
+          <div id="kbList"></div>
+        </div>
+      </div>
+
       <!-- 统计与总结 -->
       <div class="tab-panel" id="panel-stats">
         <div class="card" style="margin-bottom:16px;">
@@ -473,14 +518,36 @@ footer{text-align:center; font-size:11px; color:var(--muted); padding:22px 0 8px
         <h2>Agent 工作台</h2>
         <span class="agent-status" id="agentStatus">就绪</span>
       </div>
+      <div class="task-toolbar" style="margin-bottom:10px;">
+        <button class="btn small ghost" id="btnLlmSettings">🔑 LLM 设置</button>
+        <span class="badge-inline" id="llmBadge">LLM 未配置</span>
+      </div>
+      <div class="llm-box" id="llmBox" style="display:none;">
+        <div class="llm-row"><label>服务商预设</label><select id="llmPreset" onchange="fillLlmPreset()">
+          <option value="deepseek">DeepSeek（推荐）</option>
+          <option value="openai">OpenAI</option>
+          <option value="kimi">Kimi / Moonshot</option>
+          <option value="qwen">通义千问</option>
+          <option value="custom">自定义</option>
+        </select></div>
+        <div class="llm-row"><label>API 地址</label><input id="llmBase" placeholder="https://api.deepseek.com/v1"></div>
+        <div class="llm-row"><label>API Key（只保存在本浏览器）</label><input id="llmKey" type="password" placeholder="sk-..."></div>
+        <div class="llm-row"><label>模型</label><input id="llmModel" placeholder="deepseek-chat"></div>
+        <div class="llm-actions">
+          <button class="btn small" onclick="saveLlm()">保存</button>
+          <button class="btn small ghost" onclick="testLlm()">测试连接</button>
+          <button class="btn small ghost" onclick="clearLlm()">清除 Key</button>
+        </div>
+        <div class="llm-status" id="llmStatus">在页面填入你自己的 API Key 后，对话会变为真实 LLM：分析意图 → 调用规划函数 → 更新计划 → 生成建议。</div>
+      </div>
       <button class="btn small" id="btnReplan" style="margin-bottom:12px;">↻ 重新规划</button>
       <div class="agent-log" id="agentLog"></div>
-      <div class="agent-hint">Agent 全程透明：感知 → 读目标 → 调工具 → 规划 → 分配 → 复习 → 反思。修改任何参数都会自动重排。</div>
+      <div class="agent-hint">Agent 全程透明：感知 → 读目标 → 调工具 → 规划 → 分配 → 复习 → 反思。配置 LLM 后，对话会调用真实模型与工具。</div>
       <div class="chat">
-        <div class="chat-title">💬 和 AI 对话 <span style="font-weight:400;color:var(--muted);font-size:11px;">可以告诉它进度、优先级、每日学时</span></div>
+        <div class="chat-title">💬 和 AI 对话 <span style="font-weight:400;color:var(--muted);font-size:11px;">可问进度、优先级、大纲重点</span></div>
         <div class="chat-log" id="chatLog"></div>
         <div class="chat-input">
-          <input id="chatInput" placeholder="例如：数二完成了5章 / 408对我最重要 / 政治不重要" onkeydown="if(event.key==='Enter')sendChat()">
+          <input id="chatInput" placeholder="例如：数二刚结束高数第一章怎么办？/ 408网络这章重点是什么？" onkeydown="if(event.key==='Enter')sendChat()">
           <button class="btn small" onclick="sendChat()">发送</button>
         </div>
       </div>
@@ -488,8 +555,8 @@ footer{text-align:center; font-size:11px; color:var(--muted); padding:22px 0 8px
   </div>
 
   <footer>
-    考研学习规划 Agent v2 · 交互式教学沙盘 Demo · 支持科目自选（英一/英二、数一/数二/数三、408）<br>
-    规划与总结引擎为内置规则模型，可在接大模型 API 后升级为动态生成式规划
+    考研学习规划 Agent v3 · 真实 LLM + RAG · 支持科目自选（英一/英二、数一/数二/数三、408）<br>
+    未配置 LLM 时自动使用内置规则引擎；API Key 仅保存在本浏览器 localStorage
   </footer>
 </div>
 
@@ -621,7 +688,7 @@ const QUIZ_BANK = {
 };
 
 /* ================= 状态 ================= */
-const STORE_KEY = 'kaoyanAgentStateV2';
+const STORE_KEY = 'kaoyanAgentStateV3';
 const DEFAULTS = {
   examDate:'2026-12-19', dailyHours:6, wordsPerDay:80,
   subjectChoice:{eng:'y2', math:'s2', take408:true},
@@ -631,7 +698,9 @@ const DEFAULTS = {
   progress408:{dsc:0, jz:0, os:0, net:0},
   mastery:{zz:62, y1:63, y2:65, s1:60, s2:58, s3:60, s408:60, dsc:62, jz:58, os:60, net:64},
   tasks:{deleted:[], archived:[], edited:{}, custom:[]},
-  dayRecords:{}, subjectMinutes:{}
+  dayRecords:{}, subjectMinutes:{},
+  llm:{baseUrl:'https://api.deepseek.com/v1', apiKey:'', model:'deepseek-chat'},
+  kb:{docs:[], chunks:[]}
 };
 function mergeDefaults(){ return JSON.parse(JSON.stringify(DEFAULTS)); }
 function loadState(){
@@ -650,6 +719,8 @@ function loadState(){
       out.tasks = Object.assign({deleted:[], archived:[], edited:{}, custom:[]}, s.tasks||{});
       out.dayRecords = s.dayRecords||{};
       out.subjectMinutes = s.subjectMinutes||{};
+      out.llm = Object.assign({}, d.llm, s.llm||{});
+      out.kb = Object.assign({docs:[], chunks:[]}, s.kb||{});
       return out;
     }
   }catch(e){}
@@ -1009,7 +1080,6 @@ function allQuizScores(){
   Object.values(state.dayRecords).forEach(r=>(r.quiz||[]).forEach(q=>out.push(q.score)));
   return out;
 }
-
 /* ================= 渲染 ================= */
 function renderCountdown(){
   const el=document.getElementById('countdown');
@@ -1190,6 +1260,131 @@ function renderReview(){
   document.getElementById('chapterReview').innerHTML=items.map(x=>
     '<div class="rev-item"><span style="color:'+x.color+';font-weight:800;">'+x.icon+' '+x.sub+'</span> · 学：<b>'+x.label+'</b>（'+fmt(x.learnDate)+'）<br>复习：'+x.reviews.map(r=>'<b>'+r+'</b>').join('、')+'</div>'
   ).join('') || '<div class="note">暂无章节复习计划</div>';
+}
+
+/* ================= 知识库 RAG ================= */
+function chunkText(text){
+  const lines=String(text||'').split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  const chunks=[]; let cur={title:'', text:''};
+  const heading=/^(第[0-9一二三四五六七八九十百千]+[章节篇部]|[0-9]+[.、．]\s*|附录|前言|绪论|目录|考点|重点|难点|[一二三四五六七八九十]+[、.]|【[^】]+】)/;
+  for(const line of lines){
+    if(heading.test(line)){
+      if(cur.text) chunks.push(cur);
+      cur={title:line, text:line};
+    }else{
+      cur.text += (cur.text? '\n':'') + line;
+    }
+    if(cur.text.length>450){ chunks.push(cur); cur={title:cur.title, text:''}; }
+  }
+  if(cur.text) chunks.push(cur);
+  return chunks;
+}
+function flattenJson(obj, prefix){
+  const out=[];
+  const walk=(o,p)=>{
+    if(o===null||o===undefined) return;
+    if(typeof o==='string'||typeof o==='number'||typeof o==='boolean'){
+      out.push((p?p+': ':'')+o);
+    }else if(Array.isArray(o)){
+      o.forEach((v,i)=>walk(v,p+'['+i+']'));
+    }else if(typeof o==='object'){
+      Object.entries(o).forEach(([k,v])=>walk(v,p?p+'.'+k:k));
+    }
+  };
+  walk(obj,prefix||'');
+  return out.join('\n');
+}
+function addKbDoc(name, text){
+  if(!text || !String(text).trim()) return;
+  let content=String(text).trim();
+  if(name.toLowerCase().endsWith('.json')){
+    try{ content=flattenJson(JSON.parse(content),''); }catch(e){ /* 保留原文 */ }
+  }
+  const cs=chunkText(content);
+  const doc={id:'d'+Date.now()+Math.random().toString(36).slice(2,7), name:name, chars:content.length, ts:Date.now()};
+  if(!state.kb.docs) state.kb.docs=[];
+  if(!state.kb.chunks) state.kb.chunks=[];
+  state.kb.docs.push(doc);
+  cs.forEach(c=>state.kb.chunks.push({id:doc.id, title:c.title, text:c.text}));
+  saveState();
+  renderKB();
+}
+function addKbFiles(files){
+  Array.from(files||[]).forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=()=>addKbDoc(f.name, reader.result);
+    reader.readAsText(f);
+  });
+}
+function addKbPaste(){
+  const ta=document.getElementById('kbPaste');
+  const text=ta.value.trim();
+  if(!text){ alert('请先粘贴文本'); return; }
+  addKbDoc('粘贴文本 '+new Date().toLocaleDateString()+' '+new Date().toTimeString().slice(0,5), text);
+  ta.value='';
+}
+function deleteKbDoc(id){
+  state.kb.docs=(state.kb.docs||[]).filter(d=>d.id!==id);
+  state.kb.chunks=(state.kb.chunks||[]).filter(c=>c.id!==id);
+  saveState();
+  renderKB();
+}
+function clearKb(){
+  state.kb={docs:[],chunks:[]};
+  saveState();
+  renderKB();
+}
+function docNameOf(chunkId){
+  const d=(state.kb.docs||[]).find(x=>x.id===chunkId);
+  return d?d.name:'资料';
+}
+function kbBigrams(s){
+  const t=String(s||'').toLowerCase().replace(/[^\u4e00-\u9fff0-9a-z]/g,'');
+  const arr=[...t];
+  const out=new Set();
+  for(let i=0;i<arr.length-1;i++) out.add(arr[i]+arr[i+1]);
+  return [...out];
+}
+function searchKB(query, k){
+  const chunks=state.kb.chunks||[];
+  if(!chunks.length) return [];
+  const idx={};
+  chunks.forEach((c,i)=>{
+    kbBigrams(c.title+' '+c.text).forEach(b=>{
+      if(!idx[b]) idx[b]={};
+      idx[b][i]=(idx[b][i]||0)+1;
+    });
+  });
+  const scores={};
+  kbBigrams(query).forEach(b=>{
+    (idx[b]||{}).forEach((cnt,ci)=>{ scores[ci]=(scores[ci]||0)+cnt; });
+  });
+  const qw=String(query||'').toLowerCase().split(/[\s,，。、；;：:？?]+/).filter(w=>w.length>=2);
+  chunks.forEach((c,i)=>{
+    qw.forEach(w=>{
+      if(c.title.toLowerCase().includes(w)) scores[i]=(scores[i]||0)+3;
+      if(c.text.toLowerCase().includes(w)) scores[i]=(scores[i]||0)+0.5;
+    });
+  });
+  return Object.entries(scores).sort((a,b)=>b[1]-a[1]).slice(0,k)
+    .map(([ci,sc])=>({idx:+ci, chunk:chunks[+ci], score:Math.round(sc*10)/10}));
+}
+function renderKB(){
+  const docs=state.kb.docs||[];
+  const chunks=state.kb.chunks||[];
+  const stats=document.getElementById('kbStats');
+  if(docs.length){
+    stats.style.display='block';
+    stats.innerHTML='📊 已收录 <b>'+docs.length+'</b> 份资料，共 <b>'+chunks.length+'</b> 个片段，'+docs.reduce((a,d)=>a+(d.chars||0),0).toLocaleString()+' 字。AI 回答知识库问题时会自动检索这些内容。';
+  }else{
+    stats.style.display='none';
+  }
+  const list=document.getElementById('kbList');
+  list.innerHTML=docs.length? docs.map(d=>
+    '<div class="doc-row"><span>📄</span><span class="nm">'+d.name+'</span>'
+    +'<span class="mt">'+chunks.filter(c=>c.id===d.id).length+' 片段 · '+(d.chars||0)+' 字</span>'
+    +'<span class="task-ops"><button class="op-btn del" onclick="deleteKbDoc(\''+d.id+'\')">🗑</button></span></div>'
+  ).join('') : '<div class="note">知识库还是空的。上传考研大纲 / 专业课目录，或直接粘贴文本试试。</div>';
 }
 
 /* ================= 闯关自测 ================= */
@@ -1509,11 +1704,243 @@ function animateAgent(steps){
         status.textContent='规划完成 ✓';
         status.className='agent-status ok';
       }
-    }, 250*(i+1));
+    }, 220*(i+1));
   });
 }
 
-/* ================= AI 对话 ================= */
+/* ================= LLM ================= */
+const LLM_PRESETS={
+  deepseek:{base:'https://api.deepseek.com/v1', model:'deepseek-chat'},
+  openai:{base:'https://api.openai.com/v1', model:'gpt-4o-mini'},
+  kimi:{base:'https://api.moonshot.cn/v1', model:'moonshot-v1-8k'},
+  qwen:{base:'https://dashscope.aliyuncs.com/compatible-mode/v1', model:'qwen-plus'},
+  custom:{base:'', model:''}
+};
+async function callLlm(messages){
+  const llm=state.llm;
+  if(!llm || !llm.apiKey) throw new Error('未配置 API Key');
+  const url=(llm.baseUrl||'').replace(/\/+$/,'')+'/chat/completions';
+  const res=await fetch(url,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+llm.apiKey},
+    body:JSON.stringify({model:llm.model||'deepseek-chat', messages:messages, temperature:0.4, max_tokens:900})
+  });
+  if(!res.ok){
+    let msg='HTTP '+res.status;
+    try{ const t=await res.text(); if(t) msg+=' '+t.slice(0,180); }catch(e){}
+    throw new Error(msg);
+  }
+  const data=await res.json();
+  return data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : null;
+}
+function parseLlmJson(text){
+  if(!text) return null;
+  let t=String(text).trim();
+  const f=t.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if(f) t=f[1].trim();
+  const s=t.indexOf('{');
+  const e=t.lastIndexOf('}');
+  if(s>=0 && e>s){
+    try{ return JSON.parse(t.slice(s,e+1)); }catch(err){}
+  }
+  try{ return JSON.parse(t); }catch(err){}
+  return null;
+}
+function fillLlmPreset(){
+  const p=document.getElementById('llmPreset').value;
+  const pre=LLM_PRESETS[p]||{base:'',model:''};
+  if(p!=='custom'){
+    document.getElementById('llmBase').value=pre.base;
+    document.getElementById('llmModel').value=pre.model;
+  }
+}
+function updateLlmBadge(){
+  const b=document.getElementById('llmBadge');
+  if(state.llm && state.llm.apiKey){
+    b.textContent='LLM 已启用';
+    b.className='badge-inline on';
+  }else{
+    b.textContent='LLM 未配置';
+    b.className='badge-inline';
+  }
+}
+function saveLlm(){
+  state.llm.baseUrl=document.getElementById('llmBase').value.trim();
+  state.llm.apiKey=document.getElementById('llmKey').value.trim();
+  state.llm.model=document.getElementById('llmModel').value.trim();
+  saveState();
+  updateLlmBadge();
+  const st=document.getElementById('llmStatus');
+  st.className='llm-status ok';
+  st.textContent='已保存。现在对话会调用真实 LLM 并支持工具调用。';
+}
+async function testLlm(){
+  const st=document.getElementById('llmStatus');
+  st.className='llm-status';
+  st.textContent='正在测试连接…';
+  try{
+    const ans=await callLlm([{role:'user', content:'请只回复"连接成功"四个字。'}]);
+    st.className='llm-status ok';
+    st.textContent='测试成功，模型回复：'+(ans||'(空)');
+  }catch(e){
+    st.className='llm-status err';
+    st.textContent='测试失败：'+e.message;
+  }
+}
+function clearLlm(){
+  state.llm.apiKey='';
+  document.getElementById('llmKey').value='';
+  saveState();
+  updateLlmBadge();
+  const st=document.getElementById('llmStatus');
+  st.className='llm-status';
+  st.textContent='已清除 API Key。';
+}
+
+/* ================= Agent 工具（LLM 调用） ================= */
+function normalizeSubjectName(s){
+  const map={'政治':'zz','zz':'zz','英一':'y1','英语一':'y1','y1':'y1','英二':'y2','英语二':'y2','英语':'y2','y2':'y2','数一':'s1','数学一':'s1','s1':'s1','数二':'s2','数学二':'s2','s2':'s2','数三':'s3','数学三':'s3','s3':'s3','408':'s408','数据结构':'dsc','dsc':'dsc','计组':'jz','计算机组成原理':'jz','jz':'jz','操作系统':'os','os':'os','网络':'net','net':'net','单词':'words','词汇':'words'};
+  return map[String(s||'').trim().toLowerCase()]||null;
+}
+function getStatusText(){
+  const subs=enabledSubjects();
+  return '考试日期：'+state.examDate+'（还有 '+daysLeft()+' 天），每日可用 '+state.dailyHours+' 小时。\n'
+    +'科目与进度：'+(subs.map(s=>s.name+' '+subjectDone(s)+'/'+subjectUnits(s)+' 章，权重×'+weightOf(s)).join('；')||'无')+'。\n'
+    +'第一轮约需 '+Math.round(totalRound(1))+' 学时，四轮共约 '+Math.round(cumHours(4))+' 学时，考前可完成 '+feasibleRounds()+' 轮。';
+}
+function systemPrompt(){
+  return '你是「考研学习规划 Agent」，运行在一个单文件考研规划应用里。当前用户状态：\n'+getStatusText()
+    +'\n\n你可以调用以下工具（用 JSON 表示）：\n'
+    +'1. get_current_status()：读取最新状态\n'
+    +'2. update_progress({"subject":"数二","chapters":1})：更新某科已完成章节数（subject 支持：政治/英一/英二/数一/数二/数三/408/数据结构/计组/操作系统/网络/单词）\n'
+    +'3. set_priority({"subject":"408","level":"most"})：设置优先级，level=most|important|normal|minor\n'
+    +'4. set_daily_hours({"hours":6})：调整每日学习小时数\n'
+    +'5. run_plan()：按最新状态重新生成四轮计划与今日任务\n'
+    +'6. search_knowledge({"query":"..."})：检索用户上传的知识库（考研大纲/专业课目录等）；回答"重点/大纲/考什么"类问题必须先调用它\n\n'
+    +'输出规则：\n'
+    +'- 需要修改状态或查询资料时，只输出 JSON：{"thought":"简短思考","tool_calls":[{"name":"工具名","args":{...}}]}\n'
+    +'- 不需要工具时，输出 {"answer":"你的回答"}\n'
+    +'- 所有回复用简体中文，语气自然、给出具体可执行的建议。';
+}
+function executeTool(name, args){
+  try{
+    if(name==='get_current_status') return getStatusText();
+    if(name==='update_progress'){
+      const key=normalizeSubjectName(args.subject);
+      if(!key) return '错误：无法识别科目 '+args.subject;
+      const n=Math.max(0, parseInt(args.chapters)||0);
+      if(key==='words'){ state.progress.words=clamp(n,0,5500); }
+      else if(['dsc','jz','os','net'].includes(key)){ state.progress408[key]=clamp(n,0,SUBJECTS.s408.subs.find(x=>x.key===key).chapters.length); }
+      else{ const s=SUBJECTS[key]; if(!s) return '科目不存在'; state.progress[key]=clamp(n,0,s.chapters.length); }
+      schedulePlan('LLM 工具调用：'+args.subject+' 进度更新为 '+n);
+      return '已更新：'+args.subject+' 完成章节数='+n;
+    }
+    if(name==='set_priority'){
+      const key=normalizeSubjectName(args.subject);
+      if(!key) return '错误：无法识别科目 '+args.subject;
+      const sid=['dsc','jz','os','net'].includes(key)?'s408':key;
+      const lv=String(args.level||'normal');
+      const w=lv==='most'?1.5:(lv==='important'?1.4:(lv==='minor'?0.6:1.0));
+      state.weights[sid]=w;
+      schedulePlan('LLM 工具调用：'+args.subject+' 优先级 '+lv);
+      return '已设置：'+args.subject+' 权重 ×'+w;
+    }
+    if(name==='set_daily_hours'){
+      state.dailyHours=clamp(parseFloat(args.hours)||6,1,14);
+      schedulePlan('LLM 工具调用：每日学时 '+state.dailyHours);
+      return '已设置每日学时='+state.dailyHours;
+    }
+    if(name==='run_plan'){
+      plan('LLM 工具调用：重新规划');
+      return '已重新生成计划。今日任务：'+(todayTasks().map(t=>t.label).join('；')||'无');
+    }
+    if(name==='search_knowledge'){
+      const top=searchKB(args.query||'',5);
+      if(!top.length) return '知识库为空或没有相关内容';
+      return top.map(t=>'【来源：'+docNameOf(t.chunk.id)+'】'+t.chunk.text).join('\n---\n');
+    }
+    return '未知工具 '+name;
+  }catch(e){
+    return '工具执行异常：'+e.message;
+  }
+}
+async function agentChat(text){
+  const msgs=[{role:'system', content:systemPrompt()},{role:'user', content:text}];
+  let reply=null, obj=null;
+  for(let round=0; round<2; round++){
+    reply=await callLlm(msgs);
+    if(!reply) throw new Error('LLM 返回为空');
+    obj=parseLlmJson(reply);
+    if(!obj || !obj.tool_calls || !obj.tool_calls.length) break;
+    appendAgentStep('🧰','LLM 调用工具', obj.thought?('思考：'+obj.thought):'', true);
+    const results=[];
+    for(const tc of obj.tool_calls){
+      const nm=tc.name||'';
+      const ar=tc.args||{};
+      appendAgentStep('⚙️','执行工具 '+nm, JSON.stringify(ar), false);
+      const res=executeTool(nm, ar);
+      results.push('['+nm+'] '+res);
+    }
+    msgs.push({role:'assistant', content:reply});
+    msgs.push({role:'user', content:'工具执行结果：\n'+results.join('\n')+'\n请基于结果给出最终回答，只输出 {"answer":"..."}。'});
+  }
+  const fin=parseLlmJson(reply);
+  if(fin && fin.answer) return fin.answer;
+  return reply||'（无返回）';
+}
+
+/* ================= AI 对话（入口） ================= */
+function appendMsg(role, text, withSrc){
+  const log=document.getElementById('chatLog');
+  const div=document.createElement('div');
+  div.className='msg '+role;
+  if(withSrc){
+    div.innerHTML='<div style="white-space:pre-wrap;">'+text+'</div>'+withSrc;
+  }else{
+    div.textContent=text;
+  }
+  log.appendChild(div);
+  log.scrollTop=log.scrollHeight;
+  return div;
+}
+function replaceLastAi(text){
+  const log=document.getElementById('chatLog');
+  const last=log.lastElementChild;
+  if(last) last.textContent=text;
+}
+function kbSourcesLine(text){
+  const top=searchKB(text,3);
+  if(!top.length) return '';
+  const names=[...new Set(top.map(t=>docNameOf(t.chunk.id)))];
+  return '<div class="msg-src">📚 来源：'+names.map(n=>'<b>'+n+'</b>').join('、')+'</div>';
+}
+async function sendChat(){
+  const input=document.getElementById('chatInput');
+  const text=input.value.trim();
+  if(!text) return;
+  input.value='';
+  appendMsg('user', text);
+  const hasLlm = state.llm && state.llm.apiKey;
+  if(hasLlm){
+    appendMsg('ai','🤖 思考中…');
+    try{
+      const ans=await agentChat(text);
+      const src=kbSourcesLine(text);
+      const last=document.getElementById('chatLog').lastElementChild;
+      last.innerHTML='<div style="white-space:pre-wrap;">'+ans+'</div>'+src;
+    }catch(e){
+      const last=document.getElementById('chatLog').lastElementChild;
+      last.textContent='调用 LLM 失败：'+e.message+'（已回退到内置规则引擎）';
+      const r=processChat(text);
+      appendMsg('ai', r.reply, kbSourcesLine(text));
+      if(r.note) schedulePlan(r.note);
+    }
+  }else{
+    const r=processChat(text);
+    appendMsg('ai', r.reply, kbSourcesLine(text));
+    if(r.note) schedulePlan(r.note);
+  }
+}
 function subKeyFromText(text){
   if(/政治/.test(text)) return 'zz';
   if(/英一|英语一/.test(text)) return 'y1';
@@ -1536,34 +1963,22 @@ function activeSubIdFromKey(key){
   const found=subs.find(s=>s.id===key);
   return found? found.id : null;
 }
-function appendMsg(role, text){
-  const log=document.getElementById('chatLog');
-  const div=document.createElement('div');
-  div.className='msg '+role;
-  div.textContent=text;
-  log.appendChild(div);
-  log.scrollTop=log.scrollHeight;
-}
-function sendChat(){
-  const input=document.getElementById('chatInput');
-  const text=input.value.trim();
-  if(!text) return;
-  input.value='';
-  appendMsg('user', text);
-  const r=processChat(text);
-  appendMsg('ai', r.reply);
-  if(r.note) schedulePlan(r.note);
-}
 function processChat(text){
   const key=subKeyFromText(text);
   const nums=text.match(/\d+(\.\d+)?/g);
   const num=nums? parseFloat(nums[0]) : null;
 
+  if((state.kb.docs||[]).length && /重点|大纲|目录|考什么|章节|内容|是什么/.test(text)){
+    const top=searchKB(text,3);
+    if(top.length){
+      return {reply:'📚 知识库检索结果：\n\n'+top.map(t=>'【'+docNameOf(t.chunk.id)+'】'+t.chunk.text.slice(0,220)).join('\n\n'), note:null};
+    }
+  }
+
   if(/每天|每日/.test(text) && /小时|学时/.test(text) && num){
     state.dailyHours=clamp(num,1,14);
     return {reply:'好的，我已把每日学习时间调整为 '+state.dailyHours+' 小时，计划已重新计算。', note:'AI 对话：每日学时调整为 '+state.dailyHours+' 小时'};
   }
-
   if(/最重要/.test(text) && key){
     const sid=activeSubIdFromKey(key)||key;
     state.weights[sid]=1.5;
@@ -1584,7 +1999,6 @@ function processChat(text){
     state.weights[sid]=1.0;
     return {reply:'好的，「'+subName(key)+'」恢复标准优先级（×1.0）。', note:'AI 对话：'+subName(key)+' 恢复标准优先级'};
   }
-
   if(key && num!==null && /完成|学了|看到|看完|背|进展|进度/.test(text)){
     if(key==='words'){
       state.progress.words=clamp(Math.round(num),0,5500);
@@ -1605,18 +2019,15 @@ function processChat(text){
     }
     return {reply:'已更新：'+s.name+' 完成 '+subjectDone(s)+' / '+subjectUnits(s)+' 章，剩余工作量已重算。', note:'AI 对话：'+s.name+' 进度 '+subjectDone(s)+' 章'};
   }
-
   if(/进度|学了|多少/.test(text) && /我|现在|目前/.test(text)){
     const subs=enabledSubjects();
     const line=subs.map(s=>s.name+' '+subjectDone(s)+'/'+subjectUnits(s)+' 章').join('；');
     return {reply:'当前进度：'+line+'。第一轮预计 '+fmt(roundDates()[0].end)+' 完成，考前可完成 '+feasibleRounds()+' 轮。', note:null};
   }
-
   if(/总结|怎么样|评价|建议/.test(text)){
     return {reply:'今日总结：'+aiTodaySummary(), note:null};
   }
-
-  return {reply:'我可以帮你：1) 更新进度（如"数二完成了5章"）2) 设置优先级（如"408对我最重要"、"政治不重要"）3) 调整每日学时（如"每天学5小时"）。试试看吧！', note:null};
+  return {reply:'我可以帮你：1) 更新进度（如"数二完成了5章"）2) 设置优先级（如"408对我最重要"、"政治不重要"）3) 调整每日学时（如"每天学5小时"）4) 回答知识库问题（先到「知识库」页上传大纲）。', note:null};
 }
 function subName(key){
   const names={zz:'政治',y1:'英一',y2:'英二',s1:'数一',s2:'数二',s3:'数三',s408:'408',dsc:'数据结构',jz:'计算机组成原理',os:'操作系统',net:'计算机网络',words:'英语单词'};
@@ -1785,10 +2196,12 @@ function renderAll(){
   renderReview();
   renderQuizPicker();
   renderQuiz();
+  renderKB();
   renderStats();
   renderHeat();
   renderTodaySummary();
   renderTimerSub();
+  updateLlmBadge();
 }
 let planTimer=null;
 function schedulePlan(note){
@@ -1838,6 +2251,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('examDate').value=state.examDate;
   document.getElementById('dailyHours').value=state.dailyHours;
   document.getElementById('wordsPerDay').value=state.wordsPerDay;
+  document.getElementById('llmBase').value=state.llm.baseUrl||'';
+  document.getElementById('llmKey').value=state.llm.apiKey||'';
+  document.getElementById('llmModel').value=state.llm.model||'';
 
   document.getElementById('examDate').addEventListener('change', e=>{
     state.examDate=e.target.value;
@@ -1856,6 +2272,14 @@ document.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('btnReplan').addEventListener('click', ()=>plan('手动触发重新规划'));
   document.getElementById('btnNewTask').addEventListener('click', ()=>openEditor(null));
   document.getElementById('btnArchiveToggle').addEventListener('click', toggleArchive);
+  document.getElementById('btnLlmSettings').addEventListener('click', ()=>{
+    const box=document.getElementById('llmBox');
+    box.style.display = box.style.display==='none' ? 'grid' : 'none';
+  });
+  document.getElementById('kbFile').addEventListener('change', e=>{
+    addKbFiles(e.target.files);
+    e.target.value='';
+  });
 
   document.querySelectorAll('.tab').forEach(btn=>{
     btn.addEventListener('click', ()=>{
