@@ -1,6 +1,6 @@
 # 🎓 考研学习规划 Agent
 
-一个 AI Agent 驱动的交互式考研学习规划网页应用。单文件、纯前端、开箱即用，也是我的 AI Agent 简历作品项目。
+一个 AI Agent 驱动的交互式考研学习规划网页应用。单文件、纯前端、开箱即用。
 
 **在线演示：<https://l-umos.github.io/kaoyan-agent/>**
 
@@ -58,4 +58,4 @@ kaoyan-agent/
 
 ---
 
-作者 [@l-umos](https://github.com/l-umos) · 简历作品项目
+作者 [@l-umos](https://github.com/l-umos)
