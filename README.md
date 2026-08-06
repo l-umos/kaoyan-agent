@@ -119,4 +119,4 @@ kaoyan-agent/
 
 ---
 
-作者 [@l-umos](https://github.com/l-umos) · 简历作品项目
+作者 [@l-umos](https://github.com/l-umos) 
